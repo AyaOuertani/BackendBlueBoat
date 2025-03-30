@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.config.database import get_session
-from app.responses.user import UserResponse, LoginResponse
+from app.responses.user import TokenResponse, UserResponse, LoginResponse
 from app.schemas.user import LoginRequest, RegisterUserRequest, ResetRequest, UserCreatePassword, VerifyUserRequest, EmailRequest
 from app.services import user
 from app.config.security import get_current_user, oauth2_scheme
@@ -37,8 +37,8 @@ async def verify_user_account(data: VerifyUserRequest, background_tasks: Backgro
     await user.activate_user_account(data, session, background_tasks)
     return JSONResponse({"message" : "Account is activated successfully"})
 
-@guest_router.post("/login", status_code=status.HTTP_200_OK, response_model=LoginResponse)
-async def user_login(data: LoginRequest = Depends(), session: Session = Depends(get_session)):
+@guest_router.post("/login", status_code=status.HTTP_200_OK, response_model=TokenResponse)
+async def user_login(data: LoginRequest, session: Session = Depends(get_session)):
     return await user.get_login_token(data, session)
 
 @guest_router.post("/refresh", status_code=status.HTTP_200_OK, response_model=LoginResponse)

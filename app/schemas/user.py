@@ -38,7 +38,7 @@ class EmailRequest(BaseModel):
     email: EmailStr
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    identifier: str
     password: str
 
 class ResetRequest(BaseModel):

@@ -11,10 +11,20 @@ class UserResponse(BaseResponse):
     is_active : bool
     created_at: Union[str, None, datetime] = None
 
-class LoginResponse(BaseModel):
-    id: int 
-    full_name: str
-    email: EmailStr
-    mobile_number: str
-    is_active : bool
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    expires_in: int
     
+    # Include user information
+    id: int = None
+    username: str = None  # This will be None until you add the field
+    full_name: str = None
+    email: str = None
+    mobile_number: str = None
+    is_active: bool = None
+
+class LoginResponse(BaseModel): 
+    access_token: str
+    refresh_token: str
+    expires_in: int
