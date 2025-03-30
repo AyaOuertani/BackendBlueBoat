@@ -12,7 +12,9 @@ class UserResponse(BaseResponse):
     created_at: Union[str, None, datetime] = None
 
 class LoginResponse(BaseModel):
-    access_token: str
-    refresh_token: str
-    expires_in: int
-    token_type: str = "Bearer"
+    id: int 
+    full_name: str
+    email: EmailStr
+    mobile_number: str
+    is_active : bool
+    

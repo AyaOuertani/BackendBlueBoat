@@ -60,7 +60,7 @@ async def activate_user_account(data, session, background_tasks):
     return user
 
 async def get_login_token(data, session):
-    user = await load_user(data.username, session)
+    user = await load_user(data.full_name, session)
     if not user: 
         raise HTTPException(status_code=400, detail="Email not found")
     
