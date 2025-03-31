@@ -80,13 +80,21 @@ async def get_token_user(token: str, db):
             return user_token.user
     return None
 
+# In app/config/security.py
 async def load_user(email: str, db):
     from app.models.user import User
     try:
-        user = db.query(User).filter(User.email == email).first()
+        normalized_email = email.strip().lower()
+        user = db.query(User).filter(User.email.ilike(normalized_email)).first()
+        
+        if not user:
+            logging.info(f"User not found for email: {email}")
+        
     except Exception as user_exec:
-        logging.info(f"User Not Found, Email : {email}")
+        logging.exception(f"Exception finding user with email: {email}")
+        logging.exception(user_exec)
         user = None
+    
     return user
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_session)):

@@ -31,8 +31,9 @@ class UserCreatePassword(UserBase):
         return v
     
 class VerifyUserRequest(BaseModel):
-    token: str
+    code: str
     email: EmailStr
+
 
 class EmailRequest(BaseModel):
     email: EmailStr
@@ -42,6 +43,6 @@ class LoginRequest(BaseModel):
     password: str
 
 class ResetRequest(BaseModel):
-    token: str
+    code: str
     email: EmailStr
     password: str

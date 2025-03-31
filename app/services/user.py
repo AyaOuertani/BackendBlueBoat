@@ -3,10 +3,10 @@ import logging
 from sqlalchemy.orm import joinedload
 from fastapi import HTTPException
 from app.config.security import generate_token, get_token_payload, hash_password, is_password_strong_enough, load_user, str_decode, str_encode, verify_password
-from app.models.user import User, UserToken
+from app.models.user import User, UserToken, VerificationCode
 from app.services.email import send_account_activation_confirmation_email, send_account_verification_email, send_password_reset_email
 from app.utils.email_context import FORGOT_PASSWORD, USER_VERIFY_ACCOUNT
-from app.utils.string import unique_string
+from app.utils.string import generate_verification_code, unique_string
 from app.config.settings import get_settings
 
 settings = get_settings()
@@ -32,46 +32,62 @@ async def create_user_account(data, session, background_tasks):
     session.commit()
     session.refresh(user)
 
-    await send_account_verification_email(user, background_tasks=background_tasks)
+    code = generate_verification_code()
+    verification = VerificationCode(
+        user_id=user.id,
+        code=code,
+        purpose='account_verification',
+        expires_at=datetime.utcnow() + timedelta(minutes=30)
+    )
+    session.add(verification)
+    session.commit()
+
+    await send_account_verification_email(user, code, background_tasks=background_tasks)
     return user
 
 async def activate_user_account(data, session, background_tasks):
     user = session.query(User).filter(User.email == data.email).first()
-    if not user :
-        raise HTTPException(status_code=400, detail="This link is not valid.")
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid email address.")
     
-    user_token = user.get_context_string(context = USER_VERIFY_ACCOUNT)
-    try:
-        token_valid = verify_password(user_token, data.token)
-    except Exception as verify_exec:
-        logging.exception(verify_exec)
-        token_valid = False
-    if not token_valid:
-        raise HTTPException(status_code=400, detail="This link either expired or not valid.")
+    verification = session.query(VerificationCode).filter(
+        VerificationCode.user_id == user.id,
+        VerificationCode.code == data.code,
+        VerificationCode.purpose == 'account_verification',
+        VerificationCode.expires_at > datetime.utcnow(),
+        VerificationCode.used == False
+    ).first()
+
+    if not verification:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code.")
     
+    verification.used = True
     user.is_active = True
     user.updated_at = datetime.utcnow()
     user.verified_at = datetime.utcnow()
+    session.add(verification)
     session.add(user)
     session.commit()
     session.refresh(user)
+    session.refresh(verification)
 
     await send_account_activation_confirmation_email(user, background_tasks)
     return user
 
 async def get_login_token(data, session):
+    logging.info(f"Login attempt with identifier: {data.identifier}")
     user = await load_user(data.identifier, session)
     if not user: 
-        raise HTTPException(status_code=400, detail="Email not found")
+        raise HTTPException(status_code=401, detail="Email not found")
     
     if not verify_password(data.password, user.password):
-        raise HTTPException(status_code=400, detail="Incorrect email or password.")
+        raise HTTPException(status_code=401, detail="Incorrect email or password.")
     
     if not user.verified_at:
         raise HTTPException(status_code=400, detail="Your account is not verified. Please check your email inbox to verify your account.")
     
     if not user.is_active:
-        raise HTTPException(status_code=400, detail="Your account has been dactivated. Please contact support.")
+        raise HTTPException(status_code=400, detail="Your account has been deactivated. Please contact support.")
         
     # Generate the JWT Token
     return _generate_tokens(user, session)
@@ -84,10 +100,10 @@ async def get_refresh_token(refresh_token, session):
     refresh_key = token_payload.get('t')
     access_key = token_payload.get('a')
     user_id = str_decode(token_payload.get('sub'))
-    user_token = session.query(UserToken).option(joinedload(UserToken.user)).filter(UserToken.refresh_key == refresh_key,
+    user_token = session.query(UserToken).options(joinedload(UserToken.user)).filter(UserToken.refresh_key == refresh_key,
                                                                                     UserToken.access_key == access_key,
                                                                                     UserToken.user_id == user_id,
-                                                                                    UserToken.expires_at > datetime.utcnow()).first()
+                                                                                  UserToken.expires_at > datetime.utcnow()).first()
     if not user_token:
         raise HTTPException(status_code= 400, detail="Invalid Request")
     
@@ -125,19 +141,32 @@ def _generate_tokens(user, session):
     return{
         "access_token": access_token,
         "refresh_token": refresh_token,
-        "expires_in": at_expires.seconds
+        "expires_in": at_expires.seconds,
+        # User information
+        "id": user.id,
+        "full_name": user.full_name,
+        "email": user.email,
+        "mobile_number": user.mobile_number,
+        "is_active": user.is_active
     }
 
-async def email_forget_password_link(data, background_tasks, session):
+async def email_forget_password_code(data, background_tasks, session):
     user = await load_user(data.email, session)
-    if not user.verified_at:
-        raise HTTPException(status_code=400, detail="Your account is not verified. Please check your email index to verify your account")
+    if not user :
+        return{"message": "if the email exists, a reset code will be sent."}
     
-    if not user.is_active:
-        raise HTTPException(status_code=400, detail="Your account has been dactivated. Please contact support.")
+    code = generate_verification_code()
+    verification = VerificationCode(
+        user_id=user.id,
+        code=code,
+        purpose= 'password_reset',
+        expires_at = datetime.utcnow + timedelta(minutes=30)
+    )
+    session.add(verification)
+    session.commit()
     
     await send_password_reset_email(user, background_tasks)
-
+    return {"message": "If the email exists, a reset code will be sent."}
 
 async def reset_user_password(data, session):
     user = await load_user(data.email, session)
@@ -145,27 +174,28 @@ async def reset_user_password(data, session):
     if not user:
         raise HTTPException(status_code=400, detail="Invalid Request (Not a User)")
     
-    if not user.verified_at:
-        raise HTTPException(status_code=400, detail="Invalid request (Not Verified User)")
+    verification = session.query(VerificationCode).filter(
+        VerificationCode.user_id == user.id,
+        VerificationCode.code == data.code,
+        VerificationCode.purpose == 'password_reset',
+        VerificationCode.expires_at > datetime.utcnow(),
+        VerificationCode.used == False
+    ).first()
+    if not verification: 
+        raise HTTPException(status_code=400, detail='Invalid or expired verification code.')
     
-    if not user.is_active:
-        raise HTTPException(status_code=400, detail="Invalid request (Not Active User)")
-    
-    user_token = user.get_context_string(context=FORGOT_PASSWORD)
-    try:
-        token_valid = verify_password(user_token, data.token)
-    except Exception as verify_exec:
-        logging.exception(verify_exec)
-        token_valid = False
-    if not token_valid:
-        raise HTTPException(status_code=400, detail="Invalid window.")
-    
+    verification.used = True
+
     user.password = hash_password(data.password)
     user.updated_at = datetime.now()
+
+    session.add(verification)
     session.add(user)
     session.commit()
     session.refresh(user)
     # Notify user that password has been updated
+
+    return {"message": "Your password has been updated"}
 
 async def fetch_user_detail(pk, session):
     user = session.query(User).filter(User.id == pk).first()
