@@ -18,7 +18,6 @@ class LoginResponse(BaseModel):
     
     # Include user information
     id: int = None
-    username: str = None  # This will be None until you add the field
     full_name: str = None
     email: str = None
     mobile_number: str = None

@@ -1,44 +1,139 @@
 <!DOCTYPE html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Account Activation</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Zen+Dots&display=swap');
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Poppins', sans-serif;
             color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f9fa;
         }
         .email-container {
             width: 100%;
             max-width: 600px;
             margin: 0 auto;
+            background-color: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
         }
+        .email-header{
+            background-color: #57C3EA;
+            padding: 30px 0;
+            text-align: center;
+        }
+
         .logo {
-            max-width: 150px;
+            width: 100px;
+            height: 100px;
             margin-bottom: 16px;
         }
-        .button {
+        .header-subtitle{
+            font-family: 'Zen Dots', cursive;
             color: #fff;
-            background-color: #007BFF;
-            border-color: #007BFF;
-            border-radius: .25rem;
-            text-decoration: none;
-            padding: .375rem .75rem;
-            font-size: 1rem;
-            line-height: 1.5;
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .email-body{
+            padding: 30px;
+            color: #444;
+        }
+
+        .email-body h1{
+            color: #098BEA;
+            font-weight: 700;
+            font-size: 24px;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .email-body p{
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .verification-code{
+            text-align: center;
+            margin: 30px 0;
+            background-color: #f0f7ff;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .verification-code h2 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            letter-spacing: 8px;
+            font-size: 36px;
+            color: #098BEA;
+            margin: 0;
+        }
+
+        .expiry-note{
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            margin-top: 5px;
+
+        }
+
+        .email-footer{
+            padding: 20px 30px;
+            border-top: 1px solid #eaeaea;
+            text-align: center;
+        }
+
+        .email-footer p{
+            padding: 20px 30px;
+            color: #888;
+            margin: 5px 0;
+        }
+
+        .signature{
+            margin-top: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .app-name{
+            color: #098BEA;
+            font-weight: 700;
         }
     </style>
 </head>
 <body>
     <div class="email-container">
-        <h1>Welcome to {{ app_name }}!</h1>
-        <p>Dear {{ name }},</p>
-        <p>Thank you for signing up. Please activate your account by clicking the link below:</p>
-        <p>
-            <a href="{{ activate_url }}" class="button">Activate Account</a>
-        </p>
-        <p>If the button above doesn't work, please copy and paste the following URL into your browser:</p>
-        <p><a href="{{ activate_url }}">{{ activate_url }}</a></p>
-        <p>Thank you for choosing us!</p>
-        <p>Best Regards,<br>{{ app_name }}</p>
+        <div class="email-header">
+            <img src="https://drive.google.com/uc?export=view&id=1WDvszQE00FYlyCD0IAMJ9_1t9GjemsWO" alt="{{ app_name }} Logo" class="logo">
+        </div>
+        <div class="email-body">
+            <h1>Welcome to {{ app_name }}!</h1>
+            <p>Dear {{ name }},</p>
+            <p>Thank you for signing up. Please verify your account using the code below:</p>
+            
+            <div class="verification-code">
+                <h2>{{ verification_code }}</h2>
+                <p class="expiry-note">This code will expire in 30 minutes</p>
+            </div>
+            
+            <p>If you didn't request this verification, please ignore this email or contact our support team.</p>
+            <p class="signature">
+                Thank you for choosing us!<br>
+                Best Regards,<br>
+                <span class="app-name">{{ app_name }} Team</span>
+            </p>
+        </div>
+        <div class="email-footer">
+            <p>© 2025 {{ app_name }}. All rights reserved.</p>
+            <p>Need help? <a href="#" style="color: #098BEA; text-decoration: none;">Contact Support</a></p>
+        </div>
     </div>
 </body>
 </html>
