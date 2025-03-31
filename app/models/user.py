@@ -17,7 +17,7 @@ class User(Base):
     updated_at = Column(DateTime, nullable=True, default=None, onupdate=datetime.now)
 
     tokens = relationship("UserToken", back_populates="user")
-    codes = relationship("verification_codes", back_populates="user")
+    verification_codes = relationship("VerificationCode", back_populates="user")
 
     def get_context_string(self, context: str):
         return f"{context}{self.password[-6:]}{self.updated_at.strftime('%m%d%Y%H%M%S')}".strip()
@@ -45,4 +45,4 @@ class VerificationCode(Base):
     expires_at = Column(DateTime, nullable=False)
     used = Column(Boolean, default=False)
 
-    user = relationship("User", backref="verification_codes")
+    user = relationship("User", back_populates="verification_codes")

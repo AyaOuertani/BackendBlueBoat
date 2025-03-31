@@ -160,12 +160,12 @@ async def email_forget_password_code(data, background_tasks, session):
         user_id=user.id,
         code=code,
         purpose= 'password_reset',
-        expires_at = datetime.utcnow + timedelta(minutes=30)
+        expires_at = datetime.utcnow() + timedelta(minutes=30)
     )
     session.add(verification)
     session.commit()
     
-    await send_password_reset_email(user, background_tasks)
+    await send_password_reset_email(user, code, background_tasks)
     return {"message": "If the email exists, a reset code will be sent."}
 
 async def reset_user_password(data, session):
