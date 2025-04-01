@@ -16,6 +16,7 @@ class User(Base):
     verified_at = Column(DateTime(timezone=True), nullable=True, default=None)
     created_at= Column(DateTime(timezone=True), nullable=False,  default=lambda: datetime.now(timezone.utc) + DB_OFFSET)
     updated_at = Column(DateTime(timezone=True), nullable=True, default=None, onupdate=datetime.now(timezone.utc) + DB_OFFSET)
+    loggedin_at = Column(DateTime(timezone=True), nullable=True, default=None, onupdate=datetime.now(timezone.utc) + DB_OFFSET)
 
     tokens = relationship("UserToken", back_populates="user")
     verification_codes = relationship("VerificationCode", back_populates="user")

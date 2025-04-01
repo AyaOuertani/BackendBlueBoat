@@ -22,3 +22,4 @@ class LoginResponse(BaseModel):
     email: str = None
     mobile_number: str = None
     is_active: bool = None
+    loggedin_at: Union[str, None, datetime] = None

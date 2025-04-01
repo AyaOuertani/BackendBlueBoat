@@ -65,6 +65,7 @@ async def activate_user_account(data, session, background_tasks):
     user.is_active = True
     user.updated_at = datetime.now(timezone.utc) + timedelta(hours=1)
     user.verified_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    user.loggedin_at = datetime.now(timezone.utc) + timedelta(hours=1)
     session.add(verification)
     session.add(user)
     session.commit()
@@ -122,9 +123,11 @@ def _generate_tokens(user, session):
     user_token.refresh_key = refresh_key
     user_token.access_key = access_key
     user_token.expires_at = datetime.now(timezone.utc) + rt_expires
+    user.loggedin_at = datetime.now(timezone.utc) + timedelta(hours=1)
     session.add(user_token)
     session.commit()
     session.refresh(user_token)
+    session.refresh(user)
 
     at_playload = {
         "sub": str_decode(str(user.id)),
@@ -147,7 +150,8 @@ def _generate_tokens(user, session):
         "full_name": user.full_name,
         "email": user.email,
         "mobile_number": user.mobile_number,
-        "is_active": user.is_active
+        "is_active": user.is_active,
+        "loggedin_at": user.loggedin_at
     }
 
 async def email_forget_password_code(data, background_tasks, session):
