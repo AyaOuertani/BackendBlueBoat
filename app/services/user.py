@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 from sqlalchemy.orm import joinedload
 from fastapi import HTTPException
@@ -25,8 +25,8 @@ async def create_user_account(data, session, background_tasks):
     user.mobile_number = data.mobile_number
     user.password = hash_password(data.password)
     user.is_active = False
-    user.created_at = datetime.now()
-    user.updated_at = datetime.utcnow()
+    user.created_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    user.updated_at = datetime.now(timezone.utc) + timedelta(hours=1)
 
     session.add(user)
     session.commit()
@@ -37,7 +37,7 @@ async def create_user_account(data, session, background_tasks):
         user_id=user.id,
         code=code,
         purpose='account_verification',
-        expires_at=datetime.utcnow() + timedelta(minutes=30)
+        expires_at=datetime.now(timezone.utc) + timedelta(minutes=30) +timedelta(hours=1)
     )
     session.add(verification)
     session.commit()
@@ -54,7 +54,7 @@ async def activate_user_account(data, session, background_tasks):
         VerificationCode.user_id == user.id,
         VerificationCode.code == data.code,
         VerificationCode.purpose == 'account_verification',
-        VerificationCode.expires_at > datetime.utcnow(),
+        VerificationCode.expires_at > datetime.now(timezone.utc) + timedelta(hours=1),
         VerificationCode.used == False
     ).first()
 
@@ -63,8 +63,8 @@ async def activate_user_account(data, session, background_tasks):
     
     verification.used = True
     user.is_active = True
-    user.updated_at = datetime.utcnow()
-    user.verified_at = datetime.utcnow()
+    user.updated_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    user.verified_at = datetime.now(timezone.utc) + timedelta(hours=1)
     session.add(verification)
     session.add(user)
     session.commit()
@@ -103,11 +103,11 @@ async def get_refresh_token(refresh_token, session):
     user_token = session.query(UserToken).options(joinedload(UserToken.user)).filter(UserToken.refresh_key == refresh_key,
                                                                                     UserToken.access_key == access_key,
                                                                                     UserToken.user_id == user_id,
-                                                                                  UserToken.expires_at > datetime.utcnow()).first()
+                                                                                  UserToken.expires_at > datetime.now(timezone.utc) + timedelta(hours=1)).first()
     if not user_token:
         raise HTTPException(status_code= 400, detail="Invalid Request")
     
-    user_token.expires_at = datetime.utcnow()
+    user_token.expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
     session.add(user_token)
     session.commit()
     return _generate_tokens(user_token.user, session)
@@ -121,7 +121,7 @@ def _generate_tokens(user, session):
     user_token.user_id = user.id
     user_token.refresh_key = refresh_key
     user_token.access_key = access_key
-    user_token.expires_at = datetime.utcnow() + rt_expires
+    user_token.expires_at = datetime.now(timezone.utc) + rt_expires
     session.add(user_token)
     session.commit()
     session.refresh(user_token)
@@ -152,18 +152,28 @@ def _generate_tokens(user, session):
 
 async def email_forget_password_code(data, background_tasks, session):
     user = await load_user(data.email, session)
+
     if not user :
         return{"message": "if the email exists, a reset code will be sent."}
     
+    logging.info(
+        "Password reset requested for user",
+        extra={
+            "id": user.id,
+            "email": user.email,
+            "is_active": user.is_active
+        }
+    )
     code = generate_verification_code()
     verification = VerificationCode(
         user_id=user.id,
         code=code,
         purpose= 'password_reset',
-        expires_at = datetime.utcnow() + timedelta(minutes=30)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=1,minutes=30)
     )
     session.add(verification)
     session.commit()
+    
     
     await send_password_reset_email(user, code, background_tasks)
     return {"message": "If the email exists, a reset code will be sent."}
@@ -178,7 +188,7 @@ async def reset_user_password(data, session):
         VerificationCode.user_id == user.id,
         VerificationCode.code == data.code,
         VerificationCode.purpose == 'password_reset',
-        VerificationCode.expires_at > datetime.utcnow(),
+        VerificationCode.expires_at > datetime.now(timezone.utc) + timedelta(hours=1),
         VerificationCode.used == False
     ).first()
     if not verification: 
@@ -198,7 +208,7 @@ async def reset_user_password(data, session):
     return {"message": "Your password has been updated"}
 
 async def fetch_user_detail(pk, session):
-    user = session.query(User).filter(User.id == pk).first()
+    user = await session.query(User).filter(User.id == pk).first()
     if user:
         return user
     raise HTTPException(status_code=400, detail="User does not exists")

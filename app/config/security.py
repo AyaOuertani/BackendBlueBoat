@@ -85,7 +85,7 @@ async def load_user(email: str, db):
     from app.models.user import User
     try:
         normalized_email = email.strip().lower()
-        user = db.query(User).filter(User.email.ilike(normalized_email)).first()
+        user = db.query(User).filter(User.email.ilike(normalized_email) | User.full_name == email).first()
         
         if not user:
             logging.info(f"User not found for email: {email}")
