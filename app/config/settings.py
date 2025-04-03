@@ -8,6 +8,7 @@ from urllib.parse import quote_plus
 env_path = Path(".") / ".env"
 load_dotenv(dotenv_path=env_path)
 
+
 class Settings(BaseSettings):
     APP_NAME:  str = os.environ.get("APP_NAME", "FastAPI")
     DEBUG: bool = bool(os.environ.get("DEBUG", False))
