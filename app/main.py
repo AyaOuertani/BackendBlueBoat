@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from app.config.database import Base, engine
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import user
+from app.config.oauth import setup_oauth
+from app.routes import oauth, user
 
 Base.metadata.create_all(bind = engine)
 
@@ -24,9 +25,11 @@ def create_application():
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    setup_oauth(application)
     application.include_router(user.user_router)
     application.include_router(user.guest_router)
     application.include_router(user.auth_router)
+    application.include_router(oauth.oauth_router)
     return application
 
 

@@ -217,3 +217,45 @@ async def fetch_user_detail(pk, session):
         return user
     raise HTTPException(status_code=400, detail="User does not exists")
 
+async def process_oauth_login(provider,  oauth_id, email, full_name, session, background_tasks):
+    user = session.query(User).filter(
+        User.oauth_provider == provider,
+        User.oauth_id == oauth_id,
+    ).first()
+
+    if not user:
+        user = session.query(User).filter(
+            User.email == email,
+        ).first()
+
+        if User:
+            user.oauth_provider = provider
+            user.oauth_id = oauth_id
+            user.is_active = True
+            user.verified_at = user.verified_at or  datetime.now(timezone.utc) + timedelta(hours=1)
+            user.updated_at = datetime.now(timezone.utc) + timedelta(hours=1)
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+        
+        else:
+            user = User(
+            email = email,
+            full_name = full_name,
+            mobile_number = None,
+            oauth_provider = provider,
+            oauth_id = oauth_id,
+            is_active = True,
+            verified_at = datetime.now(timezone.utc) + timedelta(hours=1),
+            created_at = datetime.now(timezone.utc) + timedelta(hours=1),
+            updated_at = datetime.now(timezone.utc) + timedelta(hours=1),
+        )
+
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+    
+    await send_account_activation_confirmation_email(user, background_tasks)
+    return _generate_tokens(user, session)
+
+    

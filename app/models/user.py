@@ -18,6 +18,8 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), nullable=True, default=None, onupdate=datetime.now(timezone.utc) + DB_OFFSET)
     loggedin_at = Column(DateTime(timezone=True), nullable=True, default=None, onupdate=datetime.now(timezone.utc) + DB_OFFSET)
 
+    oauth_provider = Column(String(50), nullable=True)
+    oauth_id = Column(String(255), nullable=True)
     tokens = relationship("UserToken", back_populates="user")
     verification_codes = relationship("VerificationCode", back_populates="user")
 

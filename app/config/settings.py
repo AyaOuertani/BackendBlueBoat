@@ -13,8 +13,9 @@ class Settings(BaseSettings):
     APP_NAME:  str = os.environ.get("APP_NAME", "FastAPI")
     DEBUG: bool = bool(os.environ.get("DEBUG", False))
     
+    API_HOST: str =os.environ.get("API_HOST","http://192.168.173.93:8000")
     # FrontEnd Application
-    FRONTEND_HOST: str = os.environ.get("FRONTEND_HOST", "http://localhost:3000")
+    FRONTEND_HOST: str = os.environ.get("FRONTEND_HOST", "http://192.168.173.93:8081")
 
     # MySql Database Config
     MYSQL_HOST: str = os.environ.get("MYSQL_HOST", 'localhost')
@@ -32,6 +33,10 @@ class Settings(BaseSettings):
 
     # App Secret Key
     SECRET_KEY: str = os.environ.get("SECRET_KEY")
+
+    # OAuth Config
+    GOOGLE_CLIENT_ID: str = os.environ.get("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET: str = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 
 
 @lru_cache()
