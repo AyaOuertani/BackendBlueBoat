@@ -228,7 +228,7 @@ async def process_oauth_login(provider,  oauth_id, email, full_name, session, ba
             User.email == email,
         ).first()
 
-        if User:
+        if user:
             user.oauth_provider = provider
             user.oauth_id = oauth_id
             user.is_active = True
