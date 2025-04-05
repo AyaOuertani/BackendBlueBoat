@@ -1,11 +1,13 @@
 from fastapi import FastAPI
 from app.config.database import Base, engine
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
+from app.config.settings import get_settings
 from app.config.oauth import setup_oauth
 from app.routes import oauth, user
 
 Base.metadata.create_all(bind = engine)
-
+settings = get_settings()
 def create_application():
     application = FastAPI()
 
@@ -15,7 +17,6 @@ def create_application():
     "http://localhost:8000",
     "http://localhost:19006",
     "http://192.168.173.93:8081 "
-    "*"  # For development - remove or restrict in production
     ]
 
     application.add_middleware(
@@ -25,6 +26,8 @@ def create_application():
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    application.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
     setup_oauth(application)
     application.include_router(user.user_router)
     application.include_router(user.guest_router)
