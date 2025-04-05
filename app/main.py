@@ -16,7 +16,7 @@ def create_application():
     "http://localhost:3000",
     "http://localhost:8000",
     "http://localhost:19006",
-    "http://192.168.173.93:8081 "
+    "http://192.168.173.93:8000",  # Your backend IP
     ]
 
     application.add_middleware(
