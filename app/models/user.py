@@ -10,7 +10,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     full_name = Column(String(150), index=True, nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
-    mobile_number = Column(String(15), unique=True, nullable=False)
+    mobile_number = Column(String(15), unique=True, nullable=True, default='')
     password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=False)
     verified_at = Column(DateTime(timezone=True), nullable=True, default=None)
@@ -18,8 +18,10 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), nullable=True, default=None, onupdate=datetime.now(timezone.utc) + DB_OFFSET)
     loggedin_at = Column(DateTime(timezone=True), nullable=True, default=None, onupdate=datetime.now(timezone.utc) + DB_OFFSET)
 
-    oauth_provider = Column(String(50), nullable=True)
-    oauth_id = Column(String(255), nullable=True)
+    oauth_provider = Column(String(50), nullable=True, default=None)
+    oauth_id = Column(String(255), nullable=True, default=None)
+    oauth_access_token = Column(String(2000), nullable=True, default=None)
+    oauth_refresh_token = Column(String(2000), nullable=True, default=None)
     tokens = relationship("UserToken", back_populates="user")
     verification_codes = relationship("VerificationCode", back_populates="user")
 

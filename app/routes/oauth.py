@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, BackgroundTasks
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from authlib.integrations.starlette_client import OAuthError
@@ -25,6 +25,8 @@ async def login_google(request: Request):
 async def oauth_google_token_callback(request: Request):
     # This endpoint captures the code and sends it back to the mobile app
     code = request.query_params.get("code")
+    device_id = request.query_params.get("device_id")
+    device_name = request.query_params.get("device_name")
     
     if not code:
         return JSONResponse(status_code=400, content={"detail": "No authorization code received"})
@@ -37,21 +39,21 @@ async def oauth_google_token_callback(request: Request):
         <title>Authentication Successful</title>
         <script>
             // Post message to Expo's AuthSession
-            window.opener && window.opener.postMessage(
-                JSON.stringify({
-                    type: 'success',
-                    params: {
-                        code: '%s',
-                        id_token: '',
-                        access_token: ''
-                    }
-                }),
-                window.location.origin
-            );
-            // Close window after a short delay
-            setTimeout(function() {
-                window.close();
-            }, 1000);
+            window.onload = function() {
+                window.opener.postMessage(
+                    JSON.stringify({
+                        type: 'success',
+                        params: {
+                            code: '%s'
+                        }
+                    }),
+                    '*'
+                );
+                // Close window after a short delay
+                setTimeout(function() {
+                    window.close();
+                }, 1000);
+            }
         </script>
     </head>
     <body>
@@ -59,12 +61,16 @@ async def oauth_google_token_callback(request: Request):
         <p>You can close this window and return to the application.</p>
     </body>
     </html>
-    """ % code
+    """ %(code)
     
     return HTMLResponse(content=html_content)
 
 @oauth_router.post("/google/exchange-code")
-async def exchange_google_code(request: Request, session: Session = Depends(get_session)):
+async def exchange_google_code(
+    request: Request, 
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session)
+):
     data = await request.json()
     code = data.get("code")
     redirect_uri = data.get("redirect_uri")
@@ -107,19 +113,21 @@ async def exchange_google_code(request: Request, session: Session = Depends(get_
             
         user_info = user_info_response.json()
         
-        # Return the tokens and user info directly
-        # This simplified approach skips database operations for now
-        return {
-            "access_token": token_data.get("access_token"),
-            "id_token": id_token,
-            "user_info": {
-                "id": user_info.get("sub"),
-                "email": user_info.get("email"),
-                "name": user_info.get("name"),
-                "picture": user_info.get("picture")
-            }
-        }
+        # Process OAuth login through our service
+        oauth_result = await user_service.process_oauth_login(
+            provider="google",
+            oauth_id=user_info.get("sub"),
+            email=user_info.get("email"),
+            full_name=user_info.get("name"),
+            session=session,
+            access_token=token_data.get("access_token"),
+            refresh_token=token_data.get("refresh_token"),
+            background_tasks=background_tasks
+        )
+        
+        return oauth_result
         
     except Exception as e:
-        print(f"Error during code exchange: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
+        import traceback
+        print(f" Critical OAuth Error: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail="Authentication failed")

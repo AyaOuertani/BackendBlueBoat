@@ -217,7 +217,7 @@ async def fetch_user_detail(pk, session):
         return user
     raise HTTPException(status_code=400, detail="User does not exists")
 
-async def process_oauth_login(provider,  oauth_id, email, full_name, session, background_tasks):
+async def process_oauth_login(provider, oauth_id, email, full_name, session, access_token, refresh_token, background_tasks):
     user = session.query(User).filter(
         User.oauth_provider == provider,
         User.oauth_id == oauth_id,
@@ -232,8 +232,10 @@ async def process_oauth_login(provider,  oauth_id, email, full_name, session, ba
             user.oauth_provider = provider
             user.oauth_id = oauth_id
             user.is_active = True
-            user.verified_at = user.verified_at or  datetime.now(timezone.utc) + timedelta(hours=1)
+            user.verified_at = user.verified_at or datetime.now(timezone.utc) + timedelta(hours=1)
             user.updated_at = datetime.now(timezone.utc) + timedelta(hours=1)
+            user.oauth_access_token = access_token
+            user.oauth_refresh_token = refresh_token
             session.add(user)
             session.commit()
             session.refresh(user)
@@ -249,6 +251,8 @@ async def process_oauth_login(provider,  oauth_id, email, full_name, session, ba
             verified_at = datetime.now(timezone.utc) + timedelta(hours=1),
             created_at = datetime.now(timezone.utc) + timedelta(hours=1),
             updated_at = datetime.now(timezone.utc) + timedelta(hours=1),
+            oauth_access_token = access_token,
+            oauth_refresh_token = refresh_token
         )
 
         session.add(user)

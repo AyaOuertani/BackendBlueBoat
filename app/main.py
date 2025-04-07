@@ -16,7 +16,11 @@ def create_application():
     "http://localhost:3000",
     "http://localhost:8000",
     "http://localhost:19006",
-    "http://192.168.173.93:8000",  # Your backend IP
+    "http://192.168.173.93:8000",
+    "https://auth.expo.io",
+    "http://192.168.173.93:8081", 
+    "exp://192.168.173.93:8081", 
+    "https://3d54-2c0f-f3a0-96-f451-95fb-34e6-dfc3-38f7.ngrok-free.app"   # Your backend IP
     ]
 
     application.add_middleware(
@@ -41,7 +45,7 @@ app = create_application()
 
 @app.get("/")
 async def root():
-    return {"message": "Hi, I am BlueBoat. Awesome - Your setrup is done & working."}
+    return {"message": "Hi, I am BlueBoat. Awesome - Your setup is done & working."}
 
 if __name__ == "__main__":
     import uvicorn
