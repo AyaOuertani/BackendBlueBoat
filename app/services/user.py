@@ -241,10 +241,12 @@ async def process_oauth_login(provider, oauth_id, email, full_name, session, acc
             session.refresh(user)
         
         else:
+            random_password = unique_string(16)
             user = User(
             email = email,
             full_name = full_name,
             mobile_number = None,
+            password = hash_password(random_password),
             oauth_provider = provider,
             oauth_id = oauth_id,
             is_active = True,
