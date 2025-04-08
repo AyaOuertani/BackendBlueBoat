@@ -130,7 +130,7 @@ def _generate_tokens(user, session):
     session.refresh(user)
 
     at_playload = {
-        "sub": str_decode(str(user.id)),
+        "sub": str_encode(str(user.id)),
         'a': access_key,
         'r': str_encode(str(user_token.id)),
         'n': str_encode(f"{user.full_name}")
