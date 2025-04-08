@@ -113,6 +113,27 @@ async def get_refresh_token(refresh_token, session):
     session.commit()
     return _generate_tokens(user_token.user, session)
 
+
+async def get_refresh_token(refresh_token, session):
+    token_payload = get_token_payload(refresh_token, settings.SECRET_KEY, settings.JWT_ALGORITHM)
+    if not token_payload:
+        raise HTTPException(status_code=400, detail="Invalid Request")
+    
+    refresh_key = token_payload.get('t')
+    access_key = token_payload.get('a')
+    user_id = str_decode(token_payload.get('sub'))
+    user_token = session.query(UserToken).options(joinedload(UserToken.user)).filter(UserToken.refresh_key == refresh_key,
+                                                                                    UserToken.access_key == access_key,
+                                                                                    UserToken.user_id == user_id,
+                                                                                  UserToken.expires_at > datetime.now(timezone.utc) + timedelta(hours=1)).first()
+    if not user_token:
+        raise HTTPException(status_code= 400, detail="Invalid Request")
+    
+    user_token.expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    session.add(user_token)
+    session.commit()
+    return _generate_tokens(user_token.user, session)
+
 def _generate_tokens(user, session):
     refresh_key = unique_string(100)
     access_key = unique_string(50)
@@ -139,7 +160,7 @@ def _generate_tokens(user, session):
     at_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = generate_token(at_playload, settings.JWT_SECRET, settings.JWT_ALGORITHM, at_expires)
 
-    rt_payload = {"sub" : str_encode(str(user.id)), "t": refresh_key, 'm': access_key}
+    rt_payload = {"sub" : str_encode(str(user.id)), "t": refresh_key, 'a': access_key}
     refresh_token = generate_token(rt_payload, settings.SECRET_KEY, settings.JWT_ALGORITHM, rt_expires)
     return{
         "access_token": access_token,

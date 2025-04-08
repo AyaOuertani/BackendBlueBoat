@@ -1,11 +1,12 @@
 import logging
+from time import timezone
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 from passlib.context import CryptContext
 import base64
 from sqlalchemy.orm import joinedload, Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.config.database import get_session
 from app.config.settings import get_settings
 from app.models.user import UserToken
@@ -50,6 +51,19 @@ def str_encode(string: str) -> str:
 
 def str_decode(string: str) -> str:
     return base64.b85decode(string.encode('ascii')).decode('ascii')
+
+def get_token_payload(token: str, secret: str, algo: str):
+    try:
+        payload = jwt.decode(token, secret, algorithms=algo)
+    except Exception as jwt_exec : 
+        logging.debug(f"JWT Error :  {str(jwt_exec)}")
+        payload = None
+    return payload
+
+def generate_token (payload: dict, secret: str, algo: str, expiry: timedelta):
+    expire = datetime.now(timezone.utc) + expiry
+    payload.update({"exp" : expire})
+    return jwt.encode(payload, secret, algorithm=algo)
 
 def get_token_payload(token: str, secret: str, algo: str):
     try:
