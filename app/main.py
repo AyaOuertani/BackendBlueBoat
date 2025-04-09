@@ -1,35 +1,13 @@
+# temp_main.py
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from app.config.settings import get_settings
-from app.config.oauth import setup_oauth
-from app.routes.user import user_router, auth_router, guest_router
-from app.routes.oauth import oauth_router
+import uvicorn
 
-settings = get_settings()
-
-app = FastAPI(
-    title=settings.APP_NAME,
-    debug=settings.DEBUG
-)
-
-# Setup OAuth (this adds the session middleware)
-oauth = setup_oauth(app)
-
-# Add CORS middleware AFTER session middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # For production, specify actual origins
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Include routers
-app.include_router(user_router)
-app.include_router(auth_router)
-app.include_router(guest_router)
-app.include_router(oauth_router)
+app = FastAPI()
 
 @app.get("/")
-async def root():
-    return {"message": f"Welcome to {settings.APP_NAME} API"}
+def read_root():
+    return {"Hello": "World"}
+
+# You can run this directly with: python temp_main.py
+if __name__ == "__main__":
+     uvicorn.run("temp_main:app", host="0.0.0.0", port=8000, reload=True)
