@@ -1,4 +1,5 @@
 import re
+from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, validator
 
 class UserBase(BaseModel):
@@ -52,3 +53,17 @@ class ResetRequest(BaseModel):
         if 'password' in values and v != values['password']:
             raise ValueError('Passwords do not match')
         return v
+
+class UserUpdateRequest(BaseModel):
+    full_name: Optional[str] = None
+    mobile_number: Optional[str] = None
+
+    @validator('mobile_number')
+    def mobile_number_must_be_valid(cls, v):
+        if v is None:
+            return v
+        pattern = r'^\+?[0-9]{10,15}$'
+        if not re.match(pattern, v):
+            raise ValueError('Invalid mobile number format')
+        return v
+    

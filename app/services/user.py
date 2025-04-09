@@ -4,7 +4,7 @@ from sqlalchemy.orm import joinedload
 from fastapi import HTTPException
 from app.config.security import generate_token, get_token_payload, hash_password, is_password_strong_enough, load_user, str_decode, str_encode, verify_password
 from app.models.user import User, UserToken, VerificationCode
-from app.services.email import send_account_activation_confirmation_email, send_account_verification_email, send_password_reset_email
+from app.services.email import send_account_activation_confirmation_email, send_account_verification_email, send_password_reset_email, send_welcome_email
 from app.utils.email_context import FORGOT_PASSWORD, USER_VERIFY_ACCOUNT
 from app.utils.string import generate_verification_code, unique_string
 from app.config.settings import get_settings
@@ -92,27 +92,6 @@ async def get_login_token(data, session):
         
     # Generate the JWT Token
     return _generate_tokens(user, session)
-
-async def get_refresh_token(refresh_token, session):
-    token_payload = get_token_payload(refresh_token, settings.SECRET_KEY, settings.JWT_ALGORITHM)
-    if not token_payload:
-        raise HTTPException(status_code=400, detail="Invalid Request")
-    
-    refresh_key = token_payload.get('t')
-    access_key = token_payload.get('a')
-    user_id = str_decode(token_payload.get('sub'))
-    user_token = session.query(UserToken).options(joinedload(UserToken.user)).filter(UserToken.refresh_key == refresh_key,
-                                                                                    UserToken.access_key == access_key,
-                                                                                    UserToken.user_id == user_id,
-                                                                                  UserToken.expires_at > datetime.now(timezone.utc) + timedelta(hours=1)).first()
-    if not user_token:
-        raise HTTPException(status_code= 400, detail="Invalid Request")
-    
-    user_token.expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
-    session.add(user_token)
-    session.commit()
-    return _generate_tokens(user_token.user, session)
-
 
 async def get_refresh_token(refresh_token, session):
     token_payload = get_token_payload(refresh_token, settings.SECRET_KEY, settings.JWT_ALGORITHM)
@@ -267,7 +246,7 @@ async def process_oauth_login(provider, oauth_id, email, full_name, session, acc
             email = email,
             full_name = full_name,
             mobile_number = None,
-            password = hash_password(random_password),
+            password = random_password,
             oauth_provider = provider,
             oauth_id = oauth_id,
             is_active = True,
@@ -282,5 +261,23 @@ async def process_oauth_login(provider, oauth_id, email, full_name, session, acc
         session.commit()
         session.refresh(user)
     
-    await send_account_activation_confirmation_email(user, background_tasks)
+    await send_welcome_email(user, background_tasks)
     return _generate_tokens(user, session)
+
+async def update_user_profile(user_id, data, session):
+    user = session.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if data.full_name is not None:
+        user.full_name = data.full_name
+    
+    if data.mobile_number is not None:
+        user.mobile_number = data.mobile_number
+    
+    user.updated_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    
+    return user
