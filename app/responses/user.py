@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, Union
 from datetime import datetime
 from pydantic import EmailStr, BaseModel
 from app.responses.base import BaseResponse
@@ -10,6 +10,7 @@ class UserResponse(BaseResponse):
     mobile_number: str
     is_active : bool
     created_at: Union[str, None, datetime] = None
+    profile_picture: Optional[str] = None
 
 class LoginResponse(BaseModel):
     access_token: str

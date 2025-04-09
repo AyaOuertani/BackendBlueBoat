@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.config.database import get_session
 from app.responses.user import  UserResponse, LoginResponse
-from app.schemas.user import LoginRequest, RegisterUserRequest, ResetRequest, UserCreatePassword, VerifyUserRequest, EmailRequest
+from app.schemas.user import LoginRequest, RegisterUserRequest, ResetRequest, UpdateUserProfileRequest, UserCreatePassword, VerifyUserRequest, EmailRequest
 from app.services import user
 from app.config.security import get_current_user, oauth2_scheme
 
@@ -59,7 +59,10 @@ async def reset_password(data: ResetRequest, session: Session = Depends(get_sess
 async def fetch_user(user = Depends(get_current_user)):
     return user
 
-
 @auth_router.get("/{pk}", status_code=status.HTTP_200_OK, response_model=UserResponse)
 async def get_user_info(pk, session: Session = Depends(get_session)):
     return await user.fetch_user_detail(pk, session)
+
+@auth_router.put("/profile", status_code=status.HTTP_200_OK, response_model=UserResponse)
+async def update_profile(data: UpdateUserProfileRequest, current_user= Depends(get_current_user),session: Session = Depends(get_session)):
+    return await user.update_user_profile(current_user.id, data, session)

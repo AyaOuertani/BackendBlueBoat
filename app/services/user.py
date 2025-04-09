@@ -285,4 +285,21 @@ async def process_oauth_login(provider, oauth_id, email, full_name, session, acc
     await send_account_activation_confirmation_email(user, background_tasks)
     return _generate_tokens(user, session)
 
+async def update_user_profile(user_id, data, session):
+    user = session.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User Not found")
+    
+    if data.full_name:
+        user.full_name = data.full_name
+    
+    if data.mobile_number:
+        user.mobile_number = data.mobile_number
+    
+    user.updated_at = datetime.now(timezone.utc)
+    session.add(user)
+    session.commit()
+    session.refresh(User)
+
+    return user
     

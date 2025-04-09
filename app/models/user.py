@@ -17,7 +17,7 @@ class User(Base):
     created_at= Column(DateTime(timezone=True), nullable=False,  default=lambda: datetime.now(timezone.utc) + DB_OFFSET)
     updated_at = Column(DateTime(timezone=True), nullable=True, default=None, onupdate=datetime.now(timezone.utc) + DB_OFFSET)
     loggedin_at = Column(DateTime(timezone=True), nullable=True, default=None, onupdate=datetime.now(timezone.utc) + DB_OFFSET)
-
+    profile_picture = Column(String, nullable=True)
     oauth_provider = Column(String(50), nullable=True, default=None)
     oauth_id = Column(String(255), nullable=True, default=None)
     oauth_access_token = Column(String(2000), nullable=True, default=None)
