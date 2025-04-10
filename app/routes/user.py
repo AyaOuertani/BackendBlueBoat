@@ -55,8 +55,8 @@ async def reset_password(data: ResetRequest, session: Session = Depends(get_sess
     await user.reset_user_password(data, session)
     return JSONResponse({"message": "Your password has been updated."})
 
-@guest_router.post("/verify-password", status_code=status.HTTP_200_OK)
-async def verify_user_password(data: dict, current_user = Depends(get_current_user), session: Session = Depends(get_session)):
+@user_router.post("/verify-password", status_code=status.HTTP_200_OK)
+async def verify_user_password(data: str, current_user = Depends(get_current_user), session: Session = Depends(get_session)):
     return await user.verification(current_user.id,data, session)
 
 @auth_router.get("/me", status_code=status.HTTP_200_OK, response_model=UserResponse)
