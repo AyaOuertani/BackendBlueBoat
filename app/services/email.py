@@ -36,11 +36,11 @@ async def send_account_activation_confirmation_email(user: User, background_task
         background_tasks=background_tasks
     )
 
-async def send_welcome_email(user: User, background_tasks: BackgroundTasks):
+async def send_welcome_email(user: User, plain_password: str, background_tasks: BackgroundTasks):
     data = {
         'app_name': settings.APP_NAME,
         "name": user.full_name,
-        "password": user.password,
+        "password": plain_password,
         'login_url': f'{settings.FRONTEND_HOST}'
     }
     subject = f"Welcome - {settings.APP_NAME}"

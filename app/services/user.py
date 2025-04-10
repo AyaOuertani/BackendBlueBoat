@@ -223,6 +223,7 @@ async def process_oauth_login(provider, oauth_id, email, full_name, session, acc
         User.oauth_id == oauth_id,
     ).first()
 
+    random_password = unique_string(8)
     if not user:
         user = session.query(User).filter(
             User.email == email,
@@ -241,12 +242,11 @@ async def process_oauth_login(provider, oauth_id, email, full_name, session, acc
             session.refresh(user)
         
         else:
-            random_password = unique_string(16)
             user = User(
             email = email,
             full_name = full_name,
             mobile_number = None,
-            password = random_password,
+            password = hash_password(random_password),
             oauth_provider = provider,
             oauth_id = oauth_id,
             is_active = True,
@@ -261,7 +261,7 @@ async def process_oauth_login(provider, oauth_id, email, full_name, session, acc
         session.commit()
         session.refresh(user)
     
-    await send_welcome_email(user, background_tasks)
+    await send_welcome_email(user, random_password, background_tasks)
     return _generate_tokens(user, session)
 
 async def update_user_profile(user_id, data, session):
