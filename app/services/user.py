@@ -264,6 +264,17 @@ async def process_oauth_login(provider, oauth_id, email, full_name, session, acc
     await send_welcome_email(user, random_password, background_tasks)
     return _generate_tokens(user, session)
 
+async def verification (user_id, data, session):
+    password = data.get("password")
+    user = session.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if not password:
+        raise HTTPException(status_code=400, detail="Password is required")
+    is_valid = verify_password(password, user.password)
+    return {"verified": is_valid}
+
 async def update_user_profile(user_id, data, session):
     user = session.query(User).filter(User.id == user_id).first()
     if not user:
