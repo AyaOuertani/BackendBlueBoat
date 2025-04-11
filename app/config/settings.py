@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     APP_NAME:  str = os.environ.get("APP_NAME", "FastAPI")
     DEBUG: bool = bool(os.environ.get("DEBUG", False))
     
-    API_HOST: str =os.environ.get("API_HOST","https://f477-2c0f-f3a0-125-56e1-f13b-92e2-dd5a-c85b.ngrok-free.app")
+    API_HOST: str =os.environ.get("API_HOST","https://e281-2c0f-f3a0-125-ed51-10b-bdd7-cc99-d5c.ngrok-free.app")
     # FrontEnd Application
     FRONTEND_HOST: str = os.environ.get("FRONTEND_HOST", "http://192.168.173.93:8081")
 

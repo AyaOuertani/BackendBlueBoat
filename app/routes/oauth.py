@@ -60,7 +60,8 @@ async def google_callback(
         # Process tokens as you already do
         token = await oauth.google.authorize_access_token(request)
         user_info = token.get('userinfo')
-        
+        profile_picture = user_info.get('picture')
+
         # Process the login
         result = await process_oauth_login(
             provider='google',
@@ -70,7 +71,8 @@ async def google_callback(
             session=db,
             access_token=token.get('access_token', ''),
             refresh_token=token.get('refresh_token', ''),
-            background_tasks=background_tasks
+            background_tasks=background_tasks,
+            profile_picture = profile_picture
         )
         
         # Update this line - redirect to Expo app instead of web frontend

@@ -151,7 +151,8 @@ def _generate_tokens(user, session):
         "email": user.email,
         "mobile_number": user.mobile_number,
         "is_active": user.is_active,
-        "loggedin_at": user.loggedin_at
+        "loggedin_at": user.loggedin_at,
+        "profile_picture": user.profile_picture,
     }
 
 async def email_forget_password_code(data, background_tasks, session):
@@ -217,7 +218,7 @@ async def fetch_user_detail(pk, session):
         return user
     raise HTTPException(status_code=400, detail="User does not exists")
 
-async def process_oauth_login(provider, oauth_id, email, full_name, session, access_token, refresh_token, background_tasks):
+async def process_oauth_login(provider, oauth_id, email, full_name, session, access_token, refresh_token, background_tasks, profile_picture=None):
     user = session.query(User).filter(
         User.oauth_provider == provider,
         User.oauth_id == oauth_id,
@@ -237,6 +238,8 @@ async def process_oauth_login(provider, oauth_id, email, full_name, session, acc
             user.updated_at = datetime.now(timezone.utc) + timedelta(hours=1)
             user.oauth_access_token = access_token
             user.oauth_refresh_token = refresh_token
+            if profile_picture:
+                user.profile_picture = profile_picture
             session.add(user)
             session.commit()
             session.refresh(user)
@@ -254,12 +257,20 @@ async def process_oauth_login(provider, oauth_id, email, full_name, session, acc
             created_at = datetime.now(timezone.utc) + timedelta(hours=1),
             updated_at = datetime.now(timezone.utc) + timedelta(hours=1),
             oauth_access_token = access_token,
-            oauth_refresh_token = refresh_token
+            oauth_refresh_token = refresh_token,
+            profile_picture = profile_picture
         )
 
         session.add(user)
         session.commit()
         session.refresh(user)
+    else : 
+        if profile_picture and user.profile_picture != profile_picture :
+            user.profile_picture = profile_picture
+            user.updated_at = datetime.now(timezone.utc) + timezone(hours = 1)
+            session.add(user)
+            session.commit()
+            session.refresh(user)
     
     await send_welcome_email(user, random_password, background_tasks)
     return _generate_tokens(user, session)

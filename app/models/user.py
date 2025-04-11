@@ -21,6 +21,8 @@ class User(Base):
     oauth_id = Column(String(255), nullable=True, default=None)
     oauth_access_token = Column(String(2000), nullable=True, default=None)
     oauth_refresh_token = Column(String(2000), nullable=True, default=None)
+    profile_picture = Column(String(1000), nullable=True, default=None)
+
     tokens = relationship("UserToken", back_populates="user")
     verification_codes = relationship("VerificationCode", back_populates="user")
 

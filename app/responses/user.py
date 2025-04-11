@@ -10,6 +10,8 @@ class UserResponse(BaseResponse):
     mobile_number: str
     is_active : bool
     created_at: Union[str, None, datetime] = None
+    loggedin_at: Optional[datetime]
+    profile_picture: Optional[str] = None
 
 class LoginResponse(BaseModel):
     access_token: str

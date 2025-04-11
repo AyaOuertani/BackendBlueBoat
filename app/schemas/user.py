@@ -57,6 +57,7 @@ class ResetRequest(BaseModel):
 class UserUpdateRequest(BaseModel):
     full_name: Optional[str] = None
     mobile_number: Optional[str] = None
+    profile_picture: Optional[str] = None
 
     @validator('mobile_number')
     def mobile_number_must_be_valid(cls, v):
@@ -66,4 +67,15 @@ class UserUpdateRequest(BaseModel):
         if not re.match(pattern, v):
             raise ValueError('Invalid mobile number format')
         return v
-    
+    @validator('profile_picture')
+    def profile_picture_must_be_valid_url(cls, v):
+        if v is None:
+            return v
+        # Basic URL validation - you could make this more sophisticated
+        pattern = r'^https?://.+'
+        if not re.match(pattern, v):
+            raise ValueError('Profile picture must be a valid URL')
+        return v
+
+class PasswordVerificationRequest(BaseModel):
+    password: str
